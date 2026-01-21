@@ -1,11 +1,18 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideStore } from '@ngrx/store';
+import { cartReducer } from './features/cart/store/cart.reducer';
+import { menuReducer } from './features/menu/store/menu.reducer';
 
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes)
+    provideRouter(routes),
+    provideStore({
+      cart: cartReducer,  // Global cart state
+      menu: menuReducer   // Global menu state (persists dishes)
+    })
   ]
 };
