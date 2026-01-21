@@ -1,10 +1,10 @@
 <div class="app-container">
-  <nav class="navbar">
+  <nav class="navbar" *ngIf="userType$ | async as type">
     <h1>🍽️ Restaurant</h1>
     <div class="nav-links">
-      <a routerLink="/session" routerLinkActive="active">Accueil</a>
-      <a routerLink="/menu" routerLinkActive="active">Menu</a>
-      <a routerLink="/admin" routerLinkActive="active">Admin</a>
+      <a *ngIf="type === 'GUEST'" routerLink="/session" routerLinkActive="active">Accueil</a>
+      <a *ngIf="type === 'CLIENT'" routerLink="/menu" routerLinkActive="active">Menu</a>
+      <a *ngIf="type === 'ADMIN'" routerLink="/admin" routerLinkActive="active">Admin</a>
     </div>
   </nav>
 
