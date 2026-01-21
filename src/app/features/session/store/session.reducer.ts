@@ -1,29 +1,32 @@
 import { createReducer, on } from '@ngrx/store';
-import { Session } from '../../../core/models/session.model';
 import { SessionActions } from './session.actions';
 
 export interface SessionState {
-    currentSession: Session | null;
+    tableNumber: number | null;
+    clientName: string | null;
     isActive: boolean;
+    startedAt: Date | null;
 }
 
 export const initialState: SessionState = {
-    currentSession: null,
-    isActive: false
+    tableNumber: null,
+    clientName: null,
+    isActive: false,
+    startedAt: null
 };
 
 export const sessionReducer = createReducer(
     initialState,
-
     on(SessionActions.startSession, (state, { tableNumber, clientName }) => ({
         ...state,
-        currentSession: {
-            tableNumber,
-            clientName,
-            startTime: new Date()
-        },
-        isActive: true
+        tableNumber,
+        clientName,
+        isActive: true,
+        startedAt: new Date()
     })),
-
-    on(SessionActions.endSession, () => initialState)
+    on(SessionActions.endSession, (state) => ({
+        ...state,
+        isActive: false,
+        startedAt: null
+    }))
 );
