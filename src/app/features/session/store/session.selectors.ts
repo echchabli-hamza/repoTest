@@ -3,22 +3,32 @@ import { SessionState } from './session.reducer';
 
 export const selectSessionState = createFeatureSelector<SessionState>('session');
 
-export const selectCurrentSession = createSelector(
-    selectSessionState,
-    (state) => state.currentSession
-);
-
-export const selectIsSessionActive = createSelector(
+export const selectIsActive = createSelector(
     selectSessionState,
     (state) => state.isActive
 );
 
-export const selectTableNumber = createSelector(
-    selectCurrentSession,
-    (session) => session?.tableNumber
+export const selectClientName = createSelector(
+    selectSessionState,
+    (state) => state.clientName
 );
 
-export const selectClientName = createSelector(
-    selectCurrentSession,
-    (session) => session?.clientName
+export const selectTableNumber = createSelector(
+    selectSessionState,
+    (state) => state.tableNumber
+);
+
+export const selectUserType = createSelector(
+    selectSessionState,
+    (state) => state.userType
+);
+
+export const selectIsAdmin = createSelector(
+    selectUserType,
+    (type) => type === 'ADMIN'
+);
+
+export const selectIsClient = createSelector(
+    selectUserType,
+    (type) => type === 'CLIENT'
 );

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { Dish } from '../../../core/models/dish.model';
@@ -7,6 +8,9 @@ import { CartItem } from '../../../core/models/cart-item.model';
 import { CartActions } from '../../cart/store/cart.actions';
 import { selectAllDishes } from '../store/menu.selectors';
 import { selectCartItems, selectCartTotal } from '../../cart/store/cart.selectors';
+import { selectClientName, selectTableNumber } from '../../session/store/session.selectors';
+import { OrderActions } from '../../orders/store/order.actions';
+import { take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-menu-list',
@@ -33,11 +37,21 @@ import { selectCartItems, selectCartTotal } from '../../cart/store/cart.selector
         <div class="cart-total">
           <strong>Total: {{ cartTotal$ | async }}€</strong>
         </div>
+
+        <button 
+          *ngIf="(cartItems$ | async)?.length" 
+          (click)="submitOrder()" 
+          class="submit-order-btn">
+          📋 Commander
+        </button>
       </div>
       
       <!-- MENU ON RIGHT -->
       <div class="menu-section">
-        <h2>📋 Menu</h2>
+        <div class="menu-header">
+          <h2>📋 Menu</h2>
+          <button (click)="changeTable()" class="disconnect-btn">Changer de table</button>
+        </div>
         
         <div class="dishes-grid">
           <div *ngFor="let dish of dishes$ | async" class="dish-card" [class.unavailable]="!dish.available">
@@ -119,9 +133,47 @@ import { selectCartItems, selectCartTotal } from '../../cart/store/cart.selector
       border-top: 2px solid #333;
       margin-top: 1rem;
     }
+
+    .submit-order-btn {
+      width: 100%;
+      background: #4caf50;
+      color: white;
+      padding: 1rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    .submit-order-btn:hover {
+      background: #43a047;
+    }
     
     .menu-section h2 {
-      margin-top: 0;
+      margin: 0;
+    }
+
+    .menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .disconnect-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .disconnect-btn:hover {
+      background: #d32f2f;
     }
     
     .dishes-grid {
@@ -195,7 +247,7 @@ export class MenuListComponent implements OnInit {
   cartItems$: Observable<CartItem[]>;
   cartTotal$: Observable<number>;
 
-  constructor(private store: Store) {
+  constructor(private store: Store, private router: Router) {
     this.dishes$ = this.store.select(selectAllDishes);
     this.cartItems$ = this.store.select(selectCartItems);
     this.cartTotal$ = this.store.select(selectCartTotal);
@@ -211,5 +263,45 @@ export class MenuListComponent implements OnInit {
 
   removeFromCart(dishId: string): void {
     this.store.dispatch(CartActions.removeItem({ dishId }));
+  }
+
+  changeTable(): void {
+    this.router.navigate(['/session']);
+  }
+
+  submitOrder(): void {
+    let tableNumber: number | null = null;
+    let clientName: string | null = null;
+    let cartItems: CartItem[] = [];
+    let total = 0;
+
+    // Get Session Info
+    this.store.select(selectTableNumber).pipe(take(1)).subscribe(n => tableNumber = n);
+    this.store.select(selectClientName).pipe(take(1)).subscribe(n => clientName = n);
+
+    // Get Cart Info
+    this.store.select(selectCartItems).pipe(take(1)).subscribe(i => cartItems = i);
+    this.store.select(selectCartTotal).pipe(take(1)).subscribe(t => total = t);
+
+    if (cartItems.length > 0 && tableNumber && clientName) {
+      const order = {
+        id: Date.now().toString(),
+        tableNumber: tableNumber,
+        clientName: clientName,
+        items: cartItems.map(i => ({
+          dishId: i.dish.id,
+          name: i.dish.name,
+          quantity: i.quantity,
+          price: i.dish.price
+        })),
+        totalPrice: total,
+        status: 'PENDING' as const,
+        createdAt: new Date()
+      };
+
+      this.store.dispatch(OrderActions.createOrder({ order }));
+      this.store.dispatch(CartActions.clearCart()); // Assuming clearCart exists? If not check actions.
+      alert('Commande envoyée avec succès !');
+    }
   }
 }
